@@ -38,3 +38,12 @@ test('search combines name and constituency', () => {
   assert.deepEqual(searchSchools(schools,' BOTANIC ','Belfast South').map(s => s.id),['1016499']);
   assert.equal(searchSchools(schools,'botanic','Belfast East').length,0);
 });
+test('published programme capacity is preserved across age groups and ranks', () => {
+  const botanic = byId.get('1016499');
+  for (const cohort of ['target','underage']) {
+    assert.equal(recordsFor(botanic,'2026/27',cohort)[0].capacity,26);
+  }
+  for (const school of schools) for (const rows of Object.values(school.history)) {
+    for (const r of rows) assert.ok(Number.isInteger(r.capacity) && r.capacity >= 0);
+  }
+});

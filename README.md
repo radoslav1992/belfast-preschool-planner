@@ -18,8 +18,8 @@ Open http://localhost:8080. For a static host such as Cloudflare Pages, use `npm
 
 - Search by name and filter by constituency.
 - Add, reorder and compare up to five settings. The shortlist is stored on the user's device.
-- Inspect reported applications and allocations by intake, preference rank and age group.
-- Read manually reviewed 2026/27 criteria for Botanic and McArthur, including Botanic's first-preference rule. For other settings, use the official directory. All rules need review for the next intake.
+- Inspect reported applications and allocations by intake, preference rank and age group, alongside each programme’s total admission number including temporary adjustments.
+- Read manually reviewed 2026/27 criteria for Botanic and McArthur, including Botanic's first-preference rule. Each of the 103 settings also links directly to its EA preschool profile. All rules need review for the next intake.
 
 ## Reproduce the data
 
@@ -27,10 +27,15 @@ Open http://localhost:8080. For a static host such as Cloudflare Pages, use `npm
 python3 -m venv .venv
 .venv/bin/pip install -r scripts/requirements.txt
 .venv/bin/python scripts/import_data.py
+python3 -m unittest discover -s tests -p 'test_*.py'
 npm test && npm run build
 ```
 
-The importer reads four official workbooks listed in [the source manifest](data/sources.json). For offline imports pass `--from-dir /path/to/downloads` with the original workbook filenames. It uses the 2026/27 council field to select settings and matches prior years by DENI school number. Older full-time and part-time rows with the same identifier are preserved. Past settings absent from the 2026/27 cohort are outside the directory.
+The online importer requires Python 3.10+, curl and openpyxl. It discovers preschool preference workbooks on the official EA Admissions Support page, downloads the data and reads the EA sitemap for published preschool profiles. Requests are spaced at least ten seconds apart. Each manifest entry records the intake, published snapshot date, exact source URL and SHA-256 of the downloaded workbook. A missing publication, duplicate intake/cohort or incompatible layout stops the import for review before replacing the snapshot. Compatible combined releases populate the intake selector automatically.
+
+For an offline rebuild, pass `--from-dir /path/to/downloads` with the original workbook filenames. Optionally include snapshots of the admissions page and sitemap named `support` and `sitemap`. Without them the importer reuses the checked-in manifest and existing profile links.
+
+The most recent workbook’s council field selects settings. Prior years are matched by DENI school number. Profile URLs use exact normalized school names in the EA preschool sitemap, with two DE-number-verified aliases for changed titles. Unmatched new settings have no profile link until reviewed. Older full-time and part-time rows with the same identifier are preserved. Past settings absent from the 2026/27 cohort are outside the directory.
 
 The five values in each applications or allocated array represent first, second, third, other and total. Missing cohort rows stay missing. Counts come from the end of Stage 2, exclude later changes, and cannot be read as live capacity or personal odds. School criteria PDFs can report totals for different time periods or populations. Do not combine the PDF totals with the workbook counts. The 2027 criteria are scheduled for publication on 9 December 2026. Dates and rule summaries are maintained manually.
 

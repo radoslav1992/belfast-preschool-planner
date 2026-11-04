@@ -3,24 +3,28 @@
     "year": "2024/25",
     "cohort": "target",
     "asOf": "2024-06-10",
-    "url": "https://www.eani.org.uk/sites/default/files/2026-10/Preschool%20TARGET%20AGE%20ONLY%20Analysis%20of%20Preference%20for%202024-2025%20Intake%20as%20at%2010%20June%202024%20End%20Stage%202.xlsx"
+    "url": "https://www.eani.org.uk/sites/default/files/2026-10/Preschool%20TARGET%20AGE%20ONLY%20Analysis%20of%20Preference%20for%202024-2025%20Intake%20as%20at%2010%20June%202024%20End%20Stage%202.xlsx",
+    "sha256": "7d391a99e0a5a38a83a4036d4ceb02a897d6ce0534b47de33c8a377b077037c1"
   },
   {
     "year": "2024/25",
     "cohort": "underage",
     "asOf": "2024-06-10",
-    "url": "https://www.eani.org.uk/sites/default/files/2026-10/Preschool%20UNDERAGE%20ONLY%20Analysis%20of%20Preference%20for%202024-2025%20Intake%20as%20at%2010%20June%202024%20End%20of%20Stage%202.xlsx"
+    "url": "https://www.eani.org.uk/sites/default/files/2026-10/Preschool%20UNDERAGE%20ONLY%20Analysis%20of%20Preference%20for%202024-2025%20Intake%20as%20at%2010%20June%202024%20End%20of%20Stage%202.xlsx",
+    "sha256": "e116ad18e8a6f4ed400628553bb237b3c3ee78995380ec48e2f6047412b8e6b6"
   },
   {
     "year": "2025/26",
     "cohort": "both",
     "asOf": "2025-06-10",
-    "url": "https://www.eani.org.uk/sites/default/files/2026-07/Preschool%20Target%20and%20Underage%20Analysis%20of%20Preferences%20for%202025-2026%20as%20at%2010%20June%202025%20End%20of%20Stage%202_0.xlsx"
+    "url": "https://www.eani.org.uk/sites/default/files/2026-07/Preschool%20Target%20and%20Underage%20Analysis%20of%20Preferences%20for%202025-2026%20as%20at%2010%20June%202025%20End%20of%20Stage%202_0.xlsx",
+    "sha256": "125b8fea74703025f06a83042f908bf80c61ce8bb11053b59969baf86783535d"
   },
   {
     "year": "2026/27",
     "cohort": "both",
     "asOf": "2026-05-19",
-    "url": "https://www.eani.org.uk/sites/default/files/2026-10/Preschool%20Target%20and%20Underage%20Analysis%20of%20Preferences%20for%202026-27%20as%20at%2019%20May%202026%20End%20Stage%202.xlsx"
+    "url": "https://www.eani.org.uk/sites/default/files/2026-10/Preschool%20Target%20and%20Underage%20Analysis%20of%20Preferences%20for%202026-27%20as%20at%2019%20May%202026%20End%20Stage%202.xlsx",
+    "sha256": "dada5b805ef95563210c94caf4ac7a3dc7a9fe0d3981a1a59e900ec125415e9f"
   }
 ]

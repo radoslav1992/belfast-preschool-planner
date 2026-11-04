@@ -37,6 +37,9 @@ async function start() {
   for (const name of [...new Set(schools.map(s => s.area))].sort()) {
     byId('area').append(new Option(name, name));
   }
+  for (const year of [...new Set(sources.map(s => s.year))].sort().reverse()) {
+    byId('year').append(new Option(year, year));
+  }
   for (const s of sources) {
     const li = element('li');
     const group = {both:'both age groups',target:'target age',underage:'underage'}[s.cohort];
@@ -82,7 +85,7 @@ async function start() {
     const scroller = element('div', undefined, 'scroll');
     const table = element('table');
     const tr = table.createTHead().insertRow();
-    for (const label of ['Reported programme', 'Applications', 'Allocated']) tr.append(element('th',label));
+    for (const label of ['Reported programme', 'Programme places', 'Applications', 'Allocated']) tr.append(element('th',label));
     const body = table.createTBody();
     for (const id of shortlist) {
       const school = settings.get(id);
@@ -91,18 +94,20 @@ async function start() {
         const row = body.insertRow();
         row.insertCell().textContent = school.name;
         const empty = row.insertCell();
-        empty.colSpan = 2;
+        empty.colSpan = 3;
         empty.textContent = 'No record for this age group';
       }
       for (const record of rows) {
         const row = body.insertRow();
-        row.insertCell().textContent = record.programme;
+        const label = row.insertCell();
+        label.append(school.profileUrl ? link(record.programme, school.profileUrl) : record.programme);
+        row.insertCell().textContent = record.capacity ?? 'Unavailable';
         row.insertCell().textContent = record.applications[rank];
         row.insertCell().textContent = record.allocated[rank];
       }
     }
     scroller.append(table);
-    result.append(scroller, element('p', 'Historical counts for the selected intake and age group. One child may have applied to several settings.', 'meta'));
+    result.append(scroller, element('p', 'Programme places include temporary adjustments and cover the whole programme. Applications and allocations reflect the selected age group and preference. These historical counts do not show vacancies.', 'meta'));
     for (const [index, id] of shortlist.entries()) {
       const rule = criteria[id];
       if (!rule) continue;
@@ -119,7 +124,9 @@ async function start() {
     const nodes = matches.map(school => {
       const holder = element('div', undefined, 'row');
       const label = element('div');
-      label.append(element('strong',school.name), element('small', school.area + ' · ' + school.management));
+      const title = element('strong');
+      title.append(school.profileUrl ? link(school.name, school.profileUrl) : school.name);
+      label.append(title, element('small', school.area + ' · ' + school.management));
       const included = shortlist.includes(school.id);
       const toggle = button(included ? 'Remove' : '+ Add', (included ? 'Remove ' : 'Add ') + school.name,
         () => save(included ? shortlist.filter(id => id !== school.id) : [...shortlist,school.id]),
