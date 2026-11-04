@@ -1,0 +1,18 @@
+{
+  "1016499": {
+    "year": "2026/27",
+    "name": "Botanic Primary School Nursery Unit",
+    "hours": "9.00 am–1.30 pm",
+    "rules": "Within the applicable target-age priority category, the school considered first preference, then a sibling currently attending, then straight-line postcode distance. Age broke a remaining distance tie.",
+    "rankSensitive": true,
+    "url": "https://www.eani.org.uk/sites/default/files/2025-12/Botanic%20PS%20NU%20%28Belfast%29%202026-2027.pdf"
+  },
+  "1110002": {
+    "year": "2026/27",
+    "name": "McArthur Nursery School",
+    "hours": "8.30 am–1.00 pm",
+    "rules": "Within the applicable target-age category, the school gave priority to siblings of current or former pupils, other children living permanently at the same address, or a first or only child. It then considered straight-line distance to the nursery.",
+    "rankSensitive": false,
+    "url": "https://www.eani.org.uk/sites/default/files/2025-12/McArthur%20Nursery%20School%202026-2027.pdf"
+  }
+}
