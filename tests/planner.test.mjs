@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {restoreShortlist, recordsFor, searchSchools} from '../src/model.js';
+import {restoreShortlist, recordsFor, searchSchools, MAX_SHORTLIST} from '../src/model.js';
 
 const read = async file => JSON.parse(await readFile(new URL('../data/' + file, import.meta.url),'utf8'));
 const schools = await read('schools.json');
@@ -30,9 +30,12 @@ test('source totals reconcile in every included row', () => {
     }
   }
 });
-test('shortlist keeps distinct valid ids in order and enforces five', () => {
-  const ids = [...byId.keys()].slice(0,7);
-  assert.deepEqual(restoreShortlist(['bad',ids[0],...ids],byId),ids.slice(0,5));
+test('shortlist keeps distinct valid ids in order and enforces the maximum', () => {
+  const ids = [...byId.keys()].slice(0,MAX_SHORTLIST + 2);
+  assert.equal(MAX_SHORTLIST, 8);
+  assert.deepEqual(restoreShortlist(['bad',ids[0],...ids],byId),ids.slice(0,MAX_SHORTLIST));
+  assert.deepEqual(restoreShortlist(ids,byId,5),ids.slice(0,5));
+  assert.deepEqual(restoreShortlist('not a list',byId),[]);
 });
 test('search combines name and constituency', () => {
   assert.deepEqual(searchSchools(schools,' BOTANIC ','Belfast South').map(s => s.id),['1016499']);
