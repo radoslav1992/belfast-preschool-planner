@@ -263,3 +263,14 @@ export function listCheck(items, {group, intake} = {}) {
   }
   return notes;
 }
+
+/**
+ * The September intake families are preparing for on a given date. Applications
+ * open in January for the September that follows, so the round moves on in July,
+ * once the current intake's places have been allocated.
+ */
+export function seasonFor(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) throw new Error('Invalid date for season');
+  return d.getUTCMonth() >= 6 ? d.getUTCFullYear() + 1 : d.getUTCFullYear();
+}

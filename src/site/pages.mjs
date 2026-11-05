@@ -1,14 +1,14 @@
 import {STATUS, describe, intakeLabel, pluralise, slugify, groupBy, aggregate} from '../model.js';
 import {esc, num, ratio, badge, settingCard, statusBar, historyChart, barList, rankCells, SERIES} from '../ui.js';
-import {SITE_NAME, NEXT_INTAKE, OFFICIAL, TIMELINE, FAQ, MANAGEMENT_NOTES} from './content.mjs';
+import {SITE_NAME, OFFICIAL, MANAGEMENT_NOTES} from './content.mjs';
 
 const ext = (url, text) => `<a href="${esc(url)}" rel="noopener">${text} <span aria-hidden="true">↗</span></a>`;
 const stripTags = html => html.replace(/<[^>]+>/g, '');
 const fillBase = (html, base) => html.replaceAll('{base}', base);
 const cohortName = {target: 'Target age', underage: 'Underage'};
 
-function ageChecker(id, {remember = false} = {}) {
-  const intakes = [0, 1, 2].map(i => NEXT_INTAKE + i);
+function ageChecker(id, intake, {remember = false} = {}) {
+  const intakes = [0, 1, 2].map(i => intake + i);
   return `<form class="age-form" data-age-form${remember ? ' data-remember' : ''} novalidate>
     <div class="age-fields">
       <div><label class="form-label" for="${id}-dob">Child’s date of birth</label>
@@ -21,8 +21,8 @@ function ageChecker(id, {remember = false} = {}) {
   </form>`;
 }
 
-function timeline(compact = false) {
-  return `<ol class="timeline${compact ? ' timeline-compact' : ''}" data-timeline>${TIMELINE.map((step, i) => `
+function timeline(steps, compact = false) {
+  return `<ol class="timeline${compact ? ' timeline-compact' : ''}" data-timeline>${steps.map((step, i) => `
     <li class="timeline-step"${step.date ? ` data-date="${step.date}"` : ''}>
       <span class="timeline-dot" aria-hidden="true">${i + 1}</span>
       <div><p class="timeline-when">${esc(step.when)}</p><h3>${esc(step.title)}</h3>${compact ? '' : `<p>${esc(step.text)}</p>`}</div>
@@ -54,7 +54,9 @@ function statusExplainer() {
 }
 
 export function buildPages(ctx) {
-  const {schools, sources, criteria, years, latest, slugs, summaries, href, base, layout} = ctx;
+  const {schools, sources, criteria, years, latest, slugs, summaries, href, base, layout, content} = ctx;
+  const {intake, dates, faq: FAQ, timeline: steps} = content;
+  const intakeCount = years.length === 1 ? 'one intake' : years.length === 2 ? 'two intakes' : years.length === 3 ? 'three intakes' : years.length + ' intakes';
   const pages = [];
   const settingHref = school => href('settings/' + slugs.get(school.id) + '/');
   const areaNames = [...new Set(schools.map(s => s.area))].sort();
@@ -72,7 +74,7 @@ export function buildPages(ctx) {
   const homeFaq = [FAQ[0].items[1], FAQ[1].items[2], FAQ[1].items[0], FAQ[2].items[2]];
   pages.push({path: '', html: layout({
     title: 'Belfast Preschool Planner | Funded nursery and playgroup places',
-    description: `Compare all ${schools.length} funded preschool settings in Belfast, check your child’s age group and see how places were allocated over three intakes.`,
+    description: `Compare all ${schools.length} funded preschool settings in Belfast, check your child’s age group and see how places were allocated over ${intakeCount}.`,
     path: '', active: 'home',
     jsonld: [{'@context': 'https://schema.org', '@type': 'WebApplication', name: SITE_NAME, applicationCategory: 'EducationalApplication',
       operatingSystem: 'Web', inLanguage: 'en-GB', offers: {'@type': 'Offer', price: '0', priceCurrency: 'GBP'},
@@ -82,7 +84,7 @@ export function buildPages(ctx) {
     <section class="home-intro" aria-labelledby="home-title">
       <p class="eyebrow"><span class="sun-dot" aria-hidden="true">☀</span> FUNDED PRESCHOOL · BELFAST</p>
       <h1 id="home-title">Plan your child’s <span>funded preschool place in Belfast</span></h1>
-      <p class="home-description">See how places were allocated at all ${schools.length} Belfast settings over three intakes, check your child’s age group and build a shortlist before applications open on 6 January 2027.</p>
+      <p class="home-description">See how places were allocated at all ${schools.length} Belfast settings over ${intakeCount}, check your child’s age group and build a shortlist before Stage 1 applications open ${dates.stage1Open.date ? 'on ' + dates.stage1Open.text : 'in January ' + intake}.</p>
       <div class="home-proof"><span>Free</span><span>No sign-up</span><span>Official Education Authority figures</span></div>
     </section>
     <section class="lookup-panel" id="quick-check" aria-labelledby="lookup-title">
@@ -100,7 +102,7 @@ export function buildPages(ctx) {
       <div class="lookup-form-area">
         <h2>Which age group is my child in?</h2>
         <p class="lookup-description">Target-age children are placed first. Underage children are only offered places that remain.</p>
-        ${ageChecker('home')}
+        ${ageChecker('home', intake)}
       </div>
       <p class="small-note lookup-note">Independent guide. Applications are made only through the ${ext(OFFICIAL.admissions, 'Education Authority')}. <a href="${href('about/')}">How we read the figures</a></p>
     </section>
@@ -108,8 +110,8 @@ export function buildPages(ctx) {
   </div>
 
   <section class="season-card" aria-labelledby="season-title">
-    <div class="section-heading"><div><p class="eyebrow">SEPTEMBER 2027 ENTRY</p><h2 id="season-title">Key dates for the next application round</h2></div>${ext(OFFICIAL.dates, 'Official timetable')}</div>
-    ${timeline(true)}
+    <div class="section-heading"><div><p class="eyebrow">SEPTEMBER ${intake} ENTRY</p><h2 id="season-title">Key dates for the next application round</h2></div>${ext(OFFICIAL.dates, 'Official timetable')}</div>
+    ${timeline(steps, true)}
   </section>
 
   <section class="data-strip" aria-label="What the planner covers">
@@ -237,7 +239,7 @@ export function buildPages(ctx) {
 
   <div class="two-col">
     <section class="card" aria-labelledby="trend-title">
-      <h2 id="trend-title">Three intakes compared</h2>
+      <h2 id="trend-title">${esc(intakeCount.charAt(0).toUpperCase() + intakeCount.slice(1))} compared</h2>
       <p class="section-sub">Funded places against the number of target-age children who listed this setting first.</p>
       ${historyChart(pts, school.name)}
       <ul class="trend-notes">${pts.filter(Boolean).map(p => `<li><strong>${p.year}</strong> ${badge(p.status)} <span>${num(p.firstChoice)} first choices for ${num(p.places)} places · ${num(p.placesLeft)} left</span></li>`).join('')}</ul>
@@ -245,10 +247,10 @@ export function buildPages(ctx) {
     <section class="card" aria-labelledby="criteria-title">
       <h2 id="criteria-title">Admissions criteria</h2>
       ${rule ? `<div class="criteria-box"><p class="criteria-year">${esc(rule.year)} criteria (manually summarised)</p><p>${esc(rule.rules)}</p>
-        ${rule.rankSensitive ? '<p class="alert alert-warning">This setting gave priority to children who listed it as their first preference. Where you rank it may matter.</p>' : ''}
+        ${rule.rankSensitive ? `<p class="alert alert-warning">In ${esc(rule.year)}, this setting gave priority to children who listed it as their first preference. Where you rank it may matter.</p>` : ''}
         <p class="small-note">Session for that intake: ${esc(rule.hours)}</p>${ext(rule.url, 'Read the original criteria')}</div>` :
         `<p>Each setting decides who gets a place when it has more applicants than places. Criteria commonly include target age, siblings, distance or other circumstances. Some give priority to a first preference.</p>`}
-      <p class="small-note">Criteria for September 2027 are due on 9 December 2026. ${school.profileUrl ? ext(school.profileUrl, 'Find them on the EA profile') : ext(OFFICIAL.find, 'Find them on the EA website')}.</p>
+      <p class="small-note">Criteria for September ${intake} ${content.criteriaDue}. ${school.profileUrl ? ext(school.profileUrl, 'Find them on the EA profile') : ext(OFFICIAL.find, 'Find them on the EA website')}.</p>
       <h3 class="sub-title">Before you rank it</h3>
       <ul class="check-list">
         <li>Read the criteria for your intake year, not an older one.</li>
@@ -317,7 +319,7 @@ export function buildPages(ctx) {
     <section class="card step-card" aria-labelledby="child-title">
       <p class="step-tag">STEP 1</p><h2 id="child-title">Your child</h2>
       <p class="form-hint">Optional. We use the date of birth only to show the right age group and figures.</p>
-      ${ageChecker('planner', {remember: true})}
+      ${ageChecker('planner', intake, {remember: true})}
       <button type="button" class="link-button" id="forget-child">Forget date of birth</button>
     </section>
     <section class="card step-card" aria-labelledby="add-title">
@@ -344,7 +346,7 @@ export function buildPages(ctx) {
     </div>
   </section>
 
-  <section class="card" id="check-section" aria-labelledby="check-title" hidden>
+  <section class="card" id="check-section" aria-labelledby="check-title" data-criteria-note="Criteria for September ${intake} ${esc(content.criteriaDue)}." hidden>
     <p class="step-tag">STEP 4</p><h2 id="check-title">List check</h2>
     <p class="form-hint">Practical points based on the most recent intake. They are prompts, not predictions.</p>
     <div id="list-check" class="check-notes"></div>
@@ -417,17 +419,17 @@ export function buildPages(ctx) {
   const cityTrend = years.map(y => ({y, t: aggregate(schools, y)}));
   pages.push({path: 'insights/', html: layout({
     title: `Belfast preschool demand insights | ${SITE_NAME}`,
-    description: 'Which Belfast preschool settings were most in demand, which had places left, and how demand changed across three intakes, by area and type of setting.',
+    description: `Which Belfast preschool settings were most in demand, which had places left, and how demand changed across ${intakeCount}, by area and type of setting.`,
     path: 'insights/', active: 'insights', scripts: ['insights.js'], crumbs: [['Insights', 'insights/']],
     body: `<div class="page-container insights-page">
   <header class="page-heading"><p class="eyebrow">INSIGHTS</p><h1>Where demand for preschool places is highest</h1>
     <p>City-wide patterns from the Education Authority’s end-of-Stage-2 figures. Choose an intake to update every chart below.</p></header>
   <div class="segmented" role="group" aria-label="Choose intake">${[...years].reverse().map(y => `<button type="button" data-year="${y}" aria-pressed="${y === latest}">${y}</button>`).join('')}</div>
   ${years.map(insightPanel).join('')}
-  <section class="card"><h2>Three-year trend across Belfast</h2>
+  <section class="card"><h2>Trend across Belfast</h2>
     <div class="table-scroll"><table class="data-table compact"><thead><tr><th scope="col">Intake</th><th scope="col">Places</th><th scope="col">Target-age first choices</th><th scope="col">Per place</th><th scope="col">First choices not placed there</th><th scope="col">Oversubscribed settings</th><th scope="col">Places left</th></tr></thead>
     <tbody>${cityTrend.map(({y, t}) => `<tr><th scope="row">${y}</th><td>${num(t.places)}</td><td>${num(t.firstChoice)}</td><td>${ratio(t.demand)}</td><td>${num(t.firstChoiceMissed)}</td><td>${t.oversubscribed}</td><td>${num(t.placesLeft)}</td></tr>`).join('')}</tbody></table></div>
-    <p class="small-note">Target-age first choices fell from ${num(cityTrend[0].t.firstChoice)} in ${first} to ${num(cityLatest.firstChoice)} in ${latest}, while places changed from ${num(cityTrend[0].t.places)} to ${num(cityLatest.places)}.</p>
+    <p class="small-note">Target-age first choices ${cityLatest.firstChoice < cityTrend[0].t.firstChoice ? 'fell' : cityLatest.firstChoice > cityTrend[0].t.firstChoice ? 'rose' : 'stayed'} ${cityLatest.firstChoice === cityTrend[0].t.firstChoice ? 'at ' + num(cityLatest.firstChoice) : 'from ' + num(cityTrend[0].t.firstChoice) + ' in ' + first + ' to ' + num(cityLatest.firstChoice)} in ${latest}, while places changed from ${num(cityTrend[0].t.places)} to ${num(cityLatest.places)}.</p>
   </section>
   <div class="two-col">
     <section class="card"><h2>Biggest rise in demand</h2><p class="section-sub">Change in first choices per place, ${first} to ${latest}.</p>
@@ -447,7 +449,7 @@ export function buildPages(ctx) {
     path: 'guide/', active: 'guide', crumbs: [['Guide', 'guide/']],
     body: `<div class="page-container guide-page">
   <header class="page-heading"><p class="eyebrow">GUIDE</p><h1>How funded preschool admissions work</h1>
-    <p>A plain-English walk-through for Belfast families applying for September ${NEXT_INTAKE}. Rules can change between years, so confirm the details with the Education Authority before you apply.</p></header>
+    <p>A plain-English walk-through for Belfast families applying for September ${intake}. Rules can change between years, so confirm the details with the Education Authority before you apply.</p></header>
   <div class="guide-layout">
     <nav class="guide-toc" aria-label="On this page"><p class="eyebrow">ON THIS PAGE</p><ol>
       <li><a href="#age-check">Check your child’s age group</a></li><li><a href="#dates">Key dates</a></li><li><a href="#settings">Types of setting</a></li>
@@ -456,12 +458,12 @@ export function buildPages(ctx) {
     <div class="guide-body">
       <section class="card" id="age-check"><h2>1. Check your child’s age group</h2>
         <p>Funded pre-school education is for children in their <strong>final pre-school year</strong>. They are called <strong>target age</strong> and are placed first. Children a year younger are <strong>underage</strong>. They are only offered places left after target-age children have been placed, so underage places are much less certain.</p>
-        ${ageChecker('guide')}
+        ${ageChecker('guide', intake)}
         <div class="table-scroll"><table class="data-table compact"><caption>Age groups by intake</caption><thead><tr><th scope="col">Starting in</th><th scope="col">Target age if born</th><th scope="col">Underage if born</th></tr></thead>
-        <tbody>${[0, 1, 2].map(i => NEXT_INTAKE + i).map(y => `<tr><th scope="row">September ${y}</th><td>${window(y)}</td><td>${window(y + 1)}</td></tr>`).join('')}</tbody></table></div>
+        <tbody>${[0, 1, 2].map(i => intake + i).map(y => `<tr><th scope="row">September ${y}</th><td>${window(y)}</td><td>${window(y + 1)}</td></tr>`).join('')}</tbody></table></div>
         <p class="small-note">Summer-born children may be able to defer starting school in some circumstances. See ${ext(OFFICIAL.deferral, 'nidirect guidance on deferral')} and ask the Education Authority before applying.</p>
       </section>
-      <section class="card" id="dates"><h2>2. Key dates for September ${NEXT_INTAKE}</h2>${timeline()}<p class="small-note">${ext(OFFICIAL.dates, 'Check the official timetable')} for offer and Stage 2 dates.</p></section>
+      <section class="card" id="dates"><h2>2. Key dates for September ${intake}</h2>${timeline(steps)}<p class="small-note">${ext(OFFICIAL.dates, 'Check the official timetable')} for offer and Stage 2 dates.</p></section>
       <section class="card" id="settings"><h2>3. Types of setting</h2>
         <p>Funded places in Belfast are offered by:</p>
         <ul class="guide-list"><li><strong>Nursery schools and nursery units</strong> in primary schools. Programmes are listed as full-time (FT) or part-time (PT) where a setting runs both.</li>
@@ -473,7 +475,7 @@ export function buildPages(ctx) {
       <section class="card" id="criteria"><h2>4. How places are decided</h2>
         <p>When a setting has more applicants than places, it uses its published <strong>admissions criteria</strong> in order. Target-age children come before underage children. Statutory rules have required priority for target-age children from socially disadvantaged circumstances. Settings then add their own criteria, for example:</p>
         <ul class="guide-list"><li>a brother or sister at the setting or school;</li><li>a first or only child, or a family connection to the setting;</li><li>distance from home, often measured in a straight line;</li><li>listing the setting as a first preference (only some settings use this).</li></ul>
-        <div class="alert alert-info"><span class="alert-icon" aria-hidden="true">i</span><div>The Department of Education consulted in autumn 2026 on changing the socially disadvantaged circumstances criterion. Read the final rules and each setting’s criteria for September ${NEXT_INTAKE} when they are published.</div></div>
+        <div class="alert alert-info"><span class="alert-icon" aria-hidden="true">i</span><div>${esc(content.policyNote)}</div></div>
         <p>You may need to provide evidence for the criteria you rely on. The application and each setting’s criteria explain what is accepted.</p>
       </section>
       <section class="card" id="ranking"><h2>5. Ranking your preferences</h2>

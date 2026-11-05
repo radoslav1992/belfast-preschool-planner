@@ -1,13 +1,16 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {summarise, describe, aggregate, ageGroup, listCheck, toCSV, encodeList, decodeList, assignSlugs, slugify, yearsOf, searchSchools}
+import {summarise, describe, aggregate, ageGroup, listCheck, toCSV, encodeList, decodeList, assignSlugs, slugify, yearsOf, searchSchools, seasonFor}
   from '../src/model.js';
+import {keyDates, makeContent} from '../src/site/content.mjs';
 
-const read = async file => JSON.parse(await readFile(new URL('../data/' + file, import.meta.url), 'utf8'));
-const schools = await read('schools.json');
-const criteria = await read('criteria.json');
-const byId = new Map(schools.map(s => [s.id, s]));
+const read = async file => JSON.parse(await readFile(new URL(file, import.meta.url), 'utf8'));
+// Frozen values for exact checks; live data only for invariants.
+const fixture = await read('./fixtures/schools.json');
+const schools = await read('../data/schools.json');
+const criteria = await read('../data/criteria.json');
+const byId = new Map(fixture.map(s => [s.id, s]));
 
 test('summarise adds programmes and shares places across age groups', () => {
   const botanic = summarise(byId.get('1016499'), '2026/27');
@@ -53,10 +56,14 @@ test('describe explains an intake in plain English', () => {
 });
 
 test('aggregate totals reconcile with per-setting summaries', () => {
-  const total = aggregate(schools, '2026/27');
-  assert.equal(total.settings, 103);
-  assert.equal(total.oversubscribed + total.full + total.spaces, 103);
-  assert.equal(total.places, schools.reduce((sum, s) => sum + summarise(s, '2026/27').places, 0));
+  const latest = yearsOf(schools).at(-1);
+  const total = aggregate(schools, latest);
+  assert.equal(total.settings, schools.length);
+  assert.equal(total.oversubscribed + total.full + total.spaces, schools.length);
+  assert.equal(total.places, schools.reduce((sum, s) => sum + summarise(s, latest).places, 0));
+  const frozen = aggregate(fixture, '2026/27');
+  assert.equal(frozen.settings, 10);
+  assert.equal(frozen.places, fixture.reduce((sum, s) => sum + summarise(s, '2026/27').places, 0));
 });
 
 test('age groups follow the 2 July to 1 July windows', () => {
@@ -103,11 +110,38 @@ test('CSV export quotes cells and neutralises formulas', () => {
 test('slugs are unique and readable', () => {
   const slugs = assignSlugs(schools);
   assert.equal(new Set(slugs.values()).size, schools.length);
-  assert.equal(slugs.get('1016499'), 'botanic-ps-nu-belfast');
+  assert.equal(assignSlugs(fixture).get('1016499'), 'botanic-ps-nu-belfast');
   assert.equal(slugify('Our Lady’s Nursery School (Deanby)'), 'our-lady-s-nursery-school-deanby');
   for (const slug of slugs.values()) assert.match(slug, /^[a-z0-9-]+$/);
 });
 
 test('search ignores accents and case', () => {
-  assert.ok(searchSchools(schools, 'NAÍSCOIL', '').length >= 8);
+  assert.deepEqual(searchSchools(fixture, 'NAÍSCOIL an droichid', '').map(s => s.id), ['1046641']);
+});
+
+test('the application season moves on each July and never needs editing', () => {
+  assert.equal(seasonFor('2026-11-05'), 2027);
+  assert.equal(seasonFor('2027-01-20'), 2027);
+  assert.equal(seasonFor('2027-06-30T23:00:00Z'), 2027);
+  assert.equal(seasonFor('2027-07-01'), 2028);
+  assert.throws(() => seasonFor('not a date'));
+});
+
+test('key dates use confirmed values or a clearly expected pattern', () => {
+  const confirmed = {'2027': {criteria: '2026-12-09', stage1Open: '2027-01-06', stage1Close: '2027-01-20'}};
+  const known = keyDates(2027, confirmed);
+  assert.equal(known.confirmed, true);
+  assert.equal(known.stage1Open.text, '6 January 2027');
+  const next = keyDates(2028, confirmed);
+  assert.equal(next.confirmed, false);
+  assert.equal(next.stage1Open.date, null);
+  assert.match(next.stage1Open.text, /January 2028 \(expected\)/);
+});
+
+test('content rolls forward with the season', () => {
+  const later = makeContent({intake: 2028, confirmedDates: {}, years: ['2025/26', '2026/27', '2027/28']});
+  const text = JSON.stringify(later);
+  assert.doesNotMatch(text, /September 2027|9 December 2026|6 January 2027/);
+  assert.match(text, /born between 2 July 2024 and 1 July 2025 are target age/);
+  assert.match(text, /2025\/26, 2026\/27 and 2027\/28 intakes/);
 });

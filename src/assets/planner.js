@@ -119,7 +119,7 @@ async function start() {
     const items = ids.map(id => ({school: byId.get(id), summary: cache.get(id)[latest], criteria: criteria[id]}));
     const notes = listCheck(items, {group: child?.group, intake: child ? intakeLabel(child.intakeYear) : undefined});
     const unread = ids.filter(id => !(getNotes()[id] || {}).criteria).length;
-    if (ids.length && unread) notes.push({tone: 'info', title: 'Read the criteria', text: `You have not ticked “Read the criteria” for ${unread} of your settings. Criteria for September 2027 are due on 9 December 2026.`});
+    if (ids.length && unread) notes.push({tone: 'info', title: 'Read the criteria', text: `You have not ticked “Read the criteria” for ${unread} of your settings. ${$('check-section').dataset.criteriaNote || ''}`});
     if (!child) notes.push({tone: 'info', title: 'Add your child’s date of birth', text: 'Step 1 tells you whether your child is target age or underage, which changes how places are offered.'});
     const icon = {warn: '!', good: '✓', info: 'i'};
     $('list-check').innerHTML = notes.map(n => `<div class="check-note ${n.tone}"><span class="alert-icon" aria-hidden="true">${icon[n.tone]}</span><div><strong>${esc(n.title)}</strong>${esc(n.text)}</div></div>`).join('');
