@@ -197,7 +197,7 @@ export function buildPages(ctx) {
     const history = [...years].reverse().map(year => {
       const rows = school.history[year] || [];
       if (!rows.length) return `<h3 class="table-title">${year}</h3><p class="muted">No record published for this intake.</p>`;
-      return `<div class="table-scroll"><table class="data-table">
+      return `<div class="table-scroll" tabindex="0" role="region" aria-label="${year} figures by preference"><table class="data-table">
         <caption>${year} intake <span class="muted">· end of Stage 2</span></caption>
         <thead><tr><th rowspan="2" scope="col">Programme</th><th rowspan="2" scope="col">Age group</th><th rowspan="2" scope="col">Places</th><th colspan="5" scope="colgroup" class="group">Applications</th><th colspan="5" scope="colgroup" class="group">Offered a place</th></tr>
         <tr>${['1st', '2nd', '3rd', 'Other', 'Total', '1st', '2nd', '3rd', 'Other', 'Total'].map(l => `<th scope="col">${l}</th>`).join('')}</tr></thead>
@@ -384,7 +384,7 @@ export function buildPages(ctx) {
     const byArea = [...groupBy(withData, 'area')].map(([area, list]) => ({area, t: aggregate(list, year)})).sort((a, b) => b.t.demand - a.t.demand);
     const byType = [...groupBy(withData, 'management')].map(([type, list]) => ({type, t: aggregate(list, year)})).sort((a, b) => b.t.places - a.t.places);
     const firstShare = total.targetApplicants ? Math.round(100 * total.firstChoice / total.targetApplicants) : 0;
-    const groupTable = (rows, key, label) => `<div class="table-scroll"><table class="data-table compact">
+    const groupTable = (rows, key, label) => `<div class="table-scroll" tabindex="0" role="region" aria-label="${label === 'Area' ? 'Demand by area' : 'Demand by type of setting'}, ${year}"><table class="data-table compact">
       <thead><tr><th scope="col">${label}</th><th scope="col">Settings</th><th scope="col">Places</th><th scope="col">First choices</th><th scope="col">Per place</th><th scope="col">Oversubscribed</th><th scope="col">Places left</th></tr></thead>
       <tbody>${rows.map(r => `<tr><th scope="row">${key === 'area' ? `<a href="${areaHref(r.area)}">${esc(r.area)}</a>` : esc(r[key])}</th><td>${r.t.settings}</td><td>${num(r.t.places)}</td><td>${num(r.t.firstChoice)}</td><td>${ratio(r.t.demand)}</td><td>${r.t.oversubscribed}</td><td>${num(r.t.placesLeft)}</td></tr>`).join('')}</tbody></table></div>`;
     return `<div class="year-panel" data-year-panel="${year}"${year === latest ? '' : ' hidden'}>
@@ -427,7 +427,7 @@ export function buildPages(ctx) {
   <div class="segmented" role="group" aria-label="Choose intake">${[...years].reverse().map(y => `<button type="button" data-year="${y}" aria-pressed="${y === latest}">${y}</button>`).join('')}</div>
   ${years.map(insightPanel).join('')}
   <section class="card"><h2>Trend across Belfast</h2>
-    <div class="table-scroll"><table class="data-table compact"><thead><tr><th scope="col">Intake</th><th scope="col">Places</th><th scope="col">Target-age first choices</th><th scope="col">Per place</th><th scope="col">First choices not placed there</th><th scope="col">Oversubscribed settings</th><th scope="col">Places left</th></tr></thead>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Trend across Belfast"><table class="data-table compact"><thead><tr><th scope="col">Intake</th><th scope="col">Places</th><th scope="col">Target-age first choices</th><th scope="col">Per place</th><th scope="col">First choices not placed there</th><th scope="col">Oversubscribed settings</th><th scope="col">Places left</th></tr></thead>
     <tbody>${cityTrend.map(({y, t}) => `<tr><th scope="row">${y}</th><td>${num(t.places)}</td><td>${num(t.firstChoice)}</td><td>${ratio(t.demand)}</td><td>${num(t.firstChoiceMissed)}</td><td>${t.oversubscribed}</td><td>${num(t.placesLeft)}</td></tr>`).join('')}</tbody></table></div>
     <p class="small-note">Target-age first choices ${cityLatest.firstChoice < cityTrend[0].t.firstChoice ? 'fell' : cityLatest.firstChoice > cityTrend[0].t.firstChoice ? 'rose' : 'stayed'} ${cityLatest.firstChoice === cityTrend[0].t.firstChoice ? 'at ' + num(cityLatest.firstChoice) : 'from ' + num(cityTrend[0].t.firstChoice) + ' in ' + first + ' to ' + num(cityLatest.firstChoice)} in ${latest}, while places changed from ${num(cityTrend[0].t.places)} to ${num(cityLatest.places)}.</p>
   </section>
@@ -459,7 +459,7 @@ export function buildPages(ctx) {
       <section class="card" id="age-check"><h2>1. Check your child’s age group</h2>
         <p>Funded pre-school education is for children in their <strong>final pre-school year</strong>. They are called <strong>target age</strong> and are placed first. Children a year younger are <strong>underage</strong>. They are only offered places left after target-age children have been placed, so underage places are much less certain.</p>
         ${ageChecker('guide', intake)}
-        <div class="table-scroll"><table class="data-table compact"><caption>Age groups by intake</caption><thead><tr><th scope="col">Starting in</th><th scope="col">Target age if born</th><th scope="col">Underage if born</th></tr></thead>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Age groups by intake"><table class="data-table compact"><caption>Age groups by intake</caption><thead><tr><th scope="col">Starting in</th><th scope="col">Target age if born</th><th scope="col">Underage if born</th></tr></thead>
         <tbody>${[0, 1, 2].map(i => intake + i).map(y => `<tr><th scope="row">September ${y}</th><td>${window(y)}</td><td>${window(y + 1)}</td></tr>`).join('')}</tbody></table></div>
         <p class="small-note">Summer-born children may be able to defer starting school in some circumstances. See ${ext(OFFICIAL.deferral, 'nidirect guidance on deferral')} and ask the Education Authority before applying.</p>
       </section>
@@ -526,7 +526,7 @@ export function buildPages(ctx) {
   <header class="page-heading"><p class="eyebrow">ABOUT THE DATA</p><h1>Where the figures come from</h1>
     <p>Every number on this site comes from the Education Authority’s published “Analysis of Preference” workbooks, counted at the end of Stage 2. Nothing is estimated or modelled.</p></header>
   <section class="card"><h2>Source workbooks</h2>
-    <div class="table-scroll"><table class="data-table compact"><thead><tr><th scope="col">Intake</th><th scope="col">Age groups</th><th scope="col">As at</th><th scope="col">File</th><th scope="col">SHA-256</th></tr></thead>
+    <div class="table-scroll" tabindex="0" role="region" aria-label="Source workbooks"><table class="data-table compact"><thead><tr><th scope="col">Intake</th><th scope="col">Age groups</th><th scope="col">As at</th><th scope="col">File</th><th scope="col">SHA-256</th></tr></thead>
     <tbody>${sources.map(s => `<tr><th scope="row">${esc(s.year)}</th><td>${{both: 'Target and underage', target: 'Target age', underage: 'Underage'}[s.cohort]}</td><td>${esc(s.asOf)}</td><td>${ext(s.url, 'Download')}</td><td><code class="hash">${esc(s.sha256.slice(0, 12))}…</code></td></tr>`).join('')}</tbody></table></div>
     <p class="small-note">${ext(OFFICIAL.data, 'Education Authority admissions support page')} · ${ext(OFFICIAL.find, 'Find a school')}</p>
   </section>
