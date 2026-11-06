@@ -51,7 +51,24 @@ scripts/build.mjs     Zero-dependency static site generator
 data/                 Imported Education Authority data and criteria summaries
 ```
 
-Key dates, FAQ answers and guide text live in `src/site/content.mjs` and `src/site/pages.mjs`. Review them each autumn before the next intake.
+Text that depends on the application round lives in `src/site/content.mjs` and is generated from `data/season.json`, so nothing needs editing each year.
+
+## Automatic updates
+
+`.github/workflows/refresh-data.yml` keeps the site current with no manual steps. It runs every Monday, daily through May and June (when the end-of-Stage-2 workbooks appear) and on 1 July. Each run:
+
+1. moves `data/season.json` on to the next September intake each July (`node scripts/season.mjs`);
+2. runs the importer, which finds and downloads any new Education Authority workbooks and profile links;
+3. runs the Python and Node tests and builds the site;
+4. commits `data/` to the default branch only when something changed and every check passed. Cloudflare Pages, connected to the repository, deploys each push.
+
+If any step fails, nothing is published and the site keeps its last good data. The workflow opens an issue titled “Automatic data refresh failed”, comments on it for repeat failures and closes it after the next successful run. The importer stops deliberately when a workbook changes layout or name, a publication is missing or a previously matched profile link disappears, because publishing unchecked figures would be worse than keeping last year’s.
+
+Key dates come from `data/key-dates.json` when confirmed dates are listed for the intake. Otherwise the site shows the usual pattern marked “expected” (criteria in December, Stage 1 in January) and links to the official timetable, so it never shows the previous year’s dates. Adding the official dates there is optional.
+
+The Education Authority site is behind Cloudflare bot protection. If it blocks GitHub’s hosted runners, the run fails and opens an issue. Set the repository variable `IMPORT_RUNNER` (for example to `self-hosted`) to run the same job on your own machine, as Shansometar does.
+
+Tests that check exact values use the frozen fixture in `tests/fixtures/`. Tests on `data/` check invariants only, such as unique IDs, totals that reconcile and a plausible setting count, so a new intake does not break them.
 
 ## Reproduce the data
 
@@ -69,7 +86,7 @@ For an offline rebuild, pass `--from-dir /path/to/downloads` with the original w
 
 The most recent workbook’s council field selects settings. Prior years are matched by DENI school number. Profile URLs use exact normalized school names in the EA preschool sitemap, with two DE-number-verified aliases for changed titles. Unmatched new settings have no profile link until reviewed. Older full-time and part-time rows with the same identifier are preserved. Past settings absent from the 2026/27 cohort are outside the directory.
 
-The five values in each applications or allocated array represent first, second, third, other and total. Missing cohort rows stay missing. Counts come from the end of Stage 2, exclude later changes, and cannot be read as live capacity or personal odds. School criteria PDFs can report totals for different time periods or populations. Do not combine the PDF totals with the workbook counts. The 2027 criteria are scheduled for publication on 9 December 2026. Dates and rule summaries are maintained manually.
+The five values in each applications or allocated array represent first, second, third, other and total. Missing cohort rows stay missing. Counts come from the end of Stage 2, exclude later changes, and cannot be read as live capacity or personal odds. School criteria PDFs can report totals for different time periods or populations. Do not combine the PDF totals with the workbook counts. Confirmed key dates (`data/key-dates.json`) and the criteria summaries (`data/criteria.json`) are optional manual additions; criteria summaries are labelled with the year they describe.
 
 [Education Authority source workbooks](https://www.eani.org.uk/parents/pupil-applications-and-grants/admissions/admissions-support) · [Official dates](https://www.eani.org.uk/parents/pupil-applications-and-grants/admissions/admissions-key-dates) · [Official school directory](https://www.eani.org.uk/find-a-school)
 
