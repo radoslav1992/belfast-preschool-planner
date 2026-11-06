@@ -24,11 +24,20 @@ ALIASES = {
 def download(url):
     if not url.startswith(ORIGIN + "/"):
         raise ValueError(f"Expected an Education Authority URL: {url}")
-    return subprocess.run(
-        ["curl", "--fail", "--silent", "--show-error", "--location", "--proto", "=https",
-         "--proto-redir", "=https", "--max-time", "90", url],
-        capture_output=True, check=True,
-    ).stdout
+    try:
+        return subprocess.run(
+            ["curl", "--fail", "--silent", "--show-error", "--location", "--proto", "=https",
+             "--proto-redir", "=https", "--max-time", "90", url],
+            capture_output=True, check=True,
+        ).stdout
+    except subprocess.CalledProcessError as error:
+        detail = (error.stderr or b"").decode("utf-8", "replace").strip() or f"curl exit status {error.returncode}"
+        hint = ""
+        if re.search(r"\b40[13]\b", detail):
+            hint = (" The Education Authority site refused this machine, usually because its bot"
+                    " protection blocks data-centre networks. Run the refresh from a machine it"
+                    " accepts, for example a self-hosted runner (repository variable IMPORT_RUNNER).")
+        raise RuntimeError(f"Could not download {url}: {detail}.{hint}") from None
 
 
 class WorkbookLinks(HTMLParser):

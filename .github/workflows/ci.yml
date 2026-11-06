@@ -1,0 +1,29 @@
+name: CI
+
+# Checks every pull request and push to main: tests and a full site build.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Python tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Node tests
+        run: npm test
+      - name: Build
+        run: npm run build

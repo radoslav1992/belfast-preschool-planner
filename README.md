@@ -6,7 +6,7 @@ The design follows [Shansometar](https://github.com/radoslav1992/shansometar): w
 
 ## Run locally
 
-Requires Node.js 20 or newer. The site has no npm dependencies.
+Requires Node.js 20 or newer (`.node-version` pins 22 for hosting and CI). The site has no npm dependencies.
 
 ```sh
 npm test
@@ -14,7 +14,7 @@ npm run build
 python3 -m http.server 8080 --directory dist
 ```
 
-Open http://localhost:8080. For a static host such as Cloudflare Pages, use `npm run build` and output directory `dist`. Optional build settings:
+Open http://localhost:8080. To publish it, follow [DEPLOY.md](DEPLOY.md) (Cloudflare Pages, the data refresh runner and the release checklist). Changes are listed in [CHANGELOG.md](CHANGELOG.md). Optional build settings:
 
 - `SITE_URL=https://example.org` adds canonical URLs, social image tags and `sitemap.xml`.
 - `BASE_PATH=/belfast/` builds for hosting under a sub-path (default `/`).

@@ -135,7 +135,7 @@ async function start() {
       if (!s) return `<tr><td>${index + 1}</td><th scope="row"><a href="${page(school)}">${esc(school.name)}</a></th><td colspan="8" class="muted">No record for ${year}</td></tr>`;
       return `<tr><td>${index + 1}</td><th scope="row"><a href="${page(school)}">${esc(school.name)}</a></th><td>${badge(s.status)}</td><td>${num(s.places)}</td><td>${num(s.firstChoice)}</td><td>${num(Math.max(0, s.firstChoiceMissed))}</td><td>${num(s.placedBeyondFirst)}</td><td>${num(s.underagePlaced)}</td><td>${num(s.placesLeft)}</td><td>${sparkline(points, trendLabel(points))}</td></tr>`;
     }).join('');
-    $('compare-table').innerHTML = `<div class="table-scroll"><table class="data-table compare-table">
+    $('compare-table').innerHTML = `<div class="table-scroll" tabindex="0" role="region" aria-label="Shortlist comparison, ${year}"><table class="data-table compare-table">
       <thead><tr><th scope="col">#</th><th scope="col">Setting</th><th scope="col">Outcome</th><th scope="col">Places</th><th scope="col">First choices</th><th scope="col">First choices not placed</th><th scope="col">Placed from 2nd+ choice</th><th scope="col">Underage placed</th><th scope="col">Left after Stage 2</th><th scope="col">Demand trend</th></tr></thead>
       <tbody>${rows}</tbody></table></div>
       <p class="small-note">Target-age figures at the end of Stage 2 in ${year}, except “Underage placed”. The trend line shows first choices per place across ${years.join(', ')}; the grey line marks one first choice per place.${child?.group === 'underage' ? ' Your child is underage: look closely at “Underage placed” and “Left after Stage 2”.' : ''}</p>`;
@@ -152,7 +152,7 @@ async function start() {
       if (!records.length) return `<tr><th scope="row">${esc(school.name)}</th><td colspan="3" class="muted">No ${cohort === 'target' ? 'target-age' : 'underage'} record</td></tr>`;
       return records.map(r => `<tr><th scope="row"><a href="${page(school)}">${esc(r.programme)}</a></th><td>${num(r.capacity)}</td><td>${num(r.applications[rank])}</td><td>${num(r.allocated[rank])}</td></tr>`).join('');
     }).join('');
-    result.innerHTML = `<div class="table-scroll"><table class="data-table compact"><caption>${year} · ${cohort === 'target' ? 'Target age' : 'Underage'} · ${RANKS[rank]}</caption>
+    result.innerHTML = `<div class="table-scroll" tabindex="0" role="region" aria-label="Figures by age group and preference"><table class="data-table compact"><caption>${year} · ${cohort === 'target' ? 'Target age' : 'Underage'} · ${RANKS[rank]}</caption>
       <thead><tr><th scope="col">Programme</th><th scope="col">Programme places</th><th scope="col">Applications</th><th scope="col">Offered a place</th></tr></thead><tbody>${body}</tbody></table></div>
       <p class="small-note">Programme places include temporary adjustments and are shared by both age groups. These historical counts are not vacancies.</p>`;
   }

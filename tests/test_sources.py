@@ -1,11 +1,14 @@
 import json
 from pathlib import Path
+import subprocess
 import sys
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from ea_sources import DIRECTORY, attach_directory, discover_sources
+import ea_sources
+from ea_sources import DIRECTORY, ORIGIN, attach_directory, discover_sources
 
 
 class RefreshTests(unittest.TestCase):
@@ -30,3 +33,15 @@ class RefreshTests(unittest.TestCase):
         self.assertEqual(attach_directory(rows, sitemap), 1)
         self.assertEqual(rows[0]["profileUrl"], url)
         self.assertNotIn("profileUrl", rows[1])
+
+    def test_blocked_download_explains_the_cause(self):
+        refused = subprocess.CalledProcessError(22, ["curl"], stderr=b"curl: (22) The requested URL returned error: 403")
+        with mock.patch.object(ea_sources.subprocess, "run", side_effect=refused):
+            with self.assertRaises(RuntimeError) as caught:
+                ea_sources.download(ORIGIN + "/page")
+        self.assertIn("error: 403", str(caught.exception))
+        self.assertIn("IMPORT_RUNNER", str(caught.exception))
+
+    def test_download_rejects_other_hosts(self):
+        with self.assertRaises(ValueError):
+            ea_sources.download("https://example.org/file.xlsx")
