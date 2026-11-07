@@ -19,10 +19,13 @@ First public release: a multi-page site for families planning a funded preschool
 
 ### Quality
 - Accessibility: axe-core reports no WCAG 2.2 AA or best-practice violations on any page type, at desktop or phone width. Scrolling tables are keyboard reachable.
-- Security headers for Cloudflare Pages: a strict Content Security Policy with scripts from the site only, no framing, no referrer leaks and a locked-down Permissions-Policy. Every feature was tested under the policy.
+- Security headers via `_headers`: a strict Content Security Policy with scripts from the site only, no framing, no referrer leaks and a locked-down Permissions-Policy. Every feature was tested under the policy.
 - CI runs the Python and Node tests and a full build on every pull request.
+
+### Hosting
+- Served from https://belfastpreschoolplanner.com on Cloudflare Workers static assets. `wrangler.jsonc` names the Worker, points at `dist/` and serves the 404 page for unknown paths. Preview builds for pull requests no longer fail for want of an assets directory.
+- Canonical URLs, social preview images and `sitemap.xml` use the domain from `package.json`.
 
 ### Known limitations
 - The Education Authority site blocks GitHub-hosted runners, so the automatic refresh needs a self-hosted runner (see `DEPLOY.md`).
-- Canonical URLs, social preview images and `sitemap.xml` are generated only when `SITE_URL` is set at build time.
 - Criteria summaries exist for two settings and describe 2026/27 rules.

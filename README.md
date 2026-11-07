@@ -14,9 +14,9 @@ npm run build
 python3 -m http.server 8080 --directory dist
 ```
 
-Open http://localhost:8080. To publish it, follow [DEPLOY.md](DEPLOY.md) (Cloudflare Pages, the data refresh runner and the release checklist). Changes are listed in [CHANGELOG.md](CHANGELOG.md). Optional build settings:
+Open http://localhost:8080. To publish it, follow [DEPLOY.md](DEPLOY.md) (Cloudflare Workers static assets at belfastpreschoolplanner.com, the data refresh runner and the release checklist). Changes are listed in [CHANGELOG.md](CHANGELOG.md). Optional build settings:
 
-- `SITE_URL=https://example.org` adds canonical URLs, social image tags and `sitemap.xml`.
+- `SITE_URL` sets the public address for canonical URLs, social image tags and `sitemap.xml`. It defaults to `homepage` in `package.json` (https://belfastpreschoolplanner.com); set `SITE_URL=` to leave them out.
 - `BASE_PATH=/belfast/` builds for hosting under a sub-path (default `/`).
 
 ## Pages and features
@@ -46,7 +46,8 @@ src/model.js          Pure data helpers shared by build, browser and tests
 src/ui.js             HTML string templates and SVG charts shared by build and browser
 src/site/             Page layout, page templates and hand-maintained content (dates, FAQ)
 src/assets/           Stylesheet and browser modules (app, store, directory, planner, insights)
-src/images/, static/  Illustration, favicon and Cloudflare Pages headers
+src/images/, static/  Illustration, favicon and Cloudflare headers (_headers)
+wrangler.jsonc        Cloudflare Workers static assets config (assets folder, 404 page)
 scripts/build.mjs     Zero-dependency static site generator
 data/                 Imported Education Authority data and criteria summaries
 ```
@@ -60,7 +61,7 @@ Text that depends on the application round lives in `src/site/content.mjs` and i
 1. moves `data/season.json` on to the next September intake each July (`node scripts/season.mjs`);
 2. runs the importer, which finds and downloads any new Education Authority workbooks and profile links;
 3. runs the Python and Node tests and builds the site;
-4. commits `data/` to the default branch only when something changed and every check passed. Cloudflare Pages, connected to the repository, deploys each push.
+4. commits `data/` to the default branch only when something changed and every check passed. Cloudflare Workers Builds, connected to the repository, deploys each push.
 
 If any step fails, nothing is published and the site keeps its last good data. The workflow opens an issue titled “Automatic data refresh failed”, comments on it for repeat failures and closes it after the next successful run. The importer stops deliberately when a workbook changes layout or name, a publication is missing or a previously matched profile link disappears, because publishing unchecked figures would be worse than keeping last year’s.
 

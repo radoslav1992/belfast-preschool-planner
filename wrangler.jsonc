@@ -1,0 +1,13 @@
+// Cloudflare Workers static assets. Workers Builds runs `npm run build`, then
+// `npx wrangler deploy` (production) or `npx wrangler versions upload` (previews).
+// The name must match the Worker in the Cloudflare dashboard.
+{
+  "name": "belfast-preschool-planner",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    // Serve dist/404.html with a 404 status for unknown paths.
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

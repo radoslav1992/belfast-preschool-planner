@@ -5,7 +5,7 @@ name: Refresh admissions data
 #  2. imports any new Education Authority workbooks and profile links,
 #  3. tests and builds the site,
 #  4. commits to main only if data changed and every check passed.
-# Cloudflare Pages (connected to this repository) deploys each push.
+# Cloudflare Workers Builds (connected to this repository) deploys each push.
 # If anything fails, the last good data stays live and an issue is opened;
 # the issue closes itself after the next successful run.
 

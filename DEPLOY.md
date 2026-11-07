@@ -1,21 +1,25 @@
 # Deploying Belfast Preschool Planner
 
-The site is static: `npm run build` writes everything to `dist/`. It has no runtime server and no npm dependencies.
+The site is static: `npm run build` writes everything to `dist/`. It has no server code and no npm dependencies.
 
-## 1. Cloudflare Pages
+## 1. Cloudflare Workers (static assets)
 
-1. In the Cloudflare dashboard, go to **Workers & Pages → Create → Pages → Connect to Git** and choose `radoslav1992/belfast-preschool-planner`.
-2. Build settings:
-   - **Framework preset:** None
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - Node.js comes from `.node-version` (22).
-3. **Environment variables (production):**
-   - `SITE_URL`: the public address, e.g. `https://belfast.example.org`. It turns on canonical URLs, social preview images, `sitemap.xml` and the `Sitemap:` line in `robots.txt`.
-   - `BASE_PATH`: only if the site is served under a sub-path. The default is `/`.
-4. Optional: add a custom domain under **Custom domains**.
+The site runs as the Worker `belfast-preschool-planner` with static assets only, at https://belfastpreschoolplanner.com. `wrangler.jsonc` in the repository holds its configuration. The `name` there must match the Worker’s name in the dashboard.
 
-Cloudflare Pages applies `dist/_headers`, which sets the Content Security Policy, other security headers and cache times. It serves `dist/404.html` for unknown paths. Every push to `main` deploys automatically, including commits from the refresh workflow.
+Workers Builds settings (Worker → Settings → Build):
+
+- **Build command:** `npm run build`
+- **Deploy command:** `npx wrangler deploy`
+- **Non-production branch deploy command:** `npx wrangler versions upload`, which gives each pull request a preview
+- Node.js comes from `.node-version` (22).
+
+No variables are needed. An assets-only Worker cannot have runtime variables anyway. The public address comes from `homepage` in `package.json`, which the build uses for canonical URLs, social preview images, `sitemap.xml` and `robots.txt`.
+
+From `dist/`, Cloudflare applies `_headers` (Content Security Policy, other security headers and cache times). Because of `"not_found_handling": "404-page"`, it serves `404.html` with a 404 status for unknown paths. Addresses without a trailing slash redirect to the slash version. Every push to `main` deploys, including commits from the refresh workflow.
+
+`www.belfastpreschoolplanner.com` does not answer at the moment. To make it work, add it under the Worker’s **Domains** tab, or redirect it to the main domain with a redirect rule. Canonical tags already point search engines at the main domain.
+
+To check a build locally in Cloudflare’s runtime: `npm run build && npx wrangler dev`.
 
 ## 2. Automatic data refresh
 
@@ -40,9 +44,9 @@ A failed run publishes nothing. It opens or updates the issue “Automatic data 
 ## 3. Release checklist
 
 - [ ] Merge the release pull request and wait for **CI** to pass on `main`.
-- [ ] Set `SITE_URL` in Cloudflare Pages and redeploy.
+- [ ] Confirm the Workers Builds check on the pull request passes and its preview looks right.
 - [ ] Smoke test the live site: home, `/settings/`, a setting page, `/planner/` (add, reorder, share link, CSV), `/insights/`, `/guide/` and a missing URL (the 404 page).
-- [ ] Check the headers: `curl -sI https://<your-domain>/ | grep -i content-security-policy`.
+- [ ] Check the headers: `curl -sI https://belfastpreschoolplanner.com/ | grep -i content-security-policy`.
 - [ ] Set up the self-hosted runner and run **Refresh admissions data** once.
 - [ ] Tag the release: `git tag -a v1.0.0 -m "Belfast Preschool Planner 1.0.0" && git push origin v1.0.0`, then create a GitHub release from the tag using the `CHANGELOG.md` entry.
 
