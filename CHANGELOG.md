@@ -23,9 +23,10 @@ First public release: a multi-page site for families planning a funded preschool
 - CI runs the Python and Node tests and a full build on every pull request.
 
 ### Hosting
-- Served from https://belfastpreschoolplanner.com on Cloudflare Workers static assets. `wrangler.jsonc` names the Worker, points at `dist/` and serves the 404 page for unknown paths. Preview builds for pull requests no longer fail for want of an assets directory.
+- Served from https://belfastpreschoolplanner.com on Cloudflare Workers static assets. `wrangler.jsonc` names the Worker, points at `dist/` and serves the 404 page for unknown paths.
 - Canonical URLs, social preview images and `sitemap.xml` use the domain from `package.json`.
 
 ### Known limitations
 - The Education Authority site blocks GitHub-hosted runners, so the automatic refresh needs a self-hosted runner (see `DEPLOY.md`).
 - Criteria summaries exist for two settings and describe 2026/27 rules.
+- Workers Builds preview builds for pull requests fail. This predates 1.0.0, comes from the Worker’s build settings in Cloudflare, and does not affect production deploys.
