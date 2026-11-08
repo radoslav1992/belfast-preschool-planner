@@ -1,5 +1,6 @@
 // Zero-dependency static site build. Usage: npm run build
-// Optional environment: BASE_PATH (default "/") and SITE_URL (for canonical and social tags).
+// Optional environment: BASE_PATH (default "/") and SITE_URL (default: package.json "homepage";
+// set SITE_URL= to leave out canonical URLs, social image tags and the sitemap).
 import {cp, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {assignSlugs, summarise, yearsOf} from '../src/model.js';
 import {makeLayout} from '../src/site/layout.mjs';
@@ -13,7 +14,8 @@ const read = async file => JSON.parse(await readFile(new URL('data/' + file, roo
 let base = process.env.BASE_PATH || '/';
 if (!base.startsWith('/')) base = '/' + base;
 if (!base.endsWith('/')) base += '/';
-const siteUrl = process.env.SITE_URL || '';
+const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
+const siteUrl = process.env.SITE_URL ?? pkg.homepage ?? '';
 
 const [schools, sources, criteria, season, confirmedDates] = await Promise.all(
   ['schools.json', 'sources.json', 'criteria.json', 'season.json', 'key-dates.json'].map(read));
