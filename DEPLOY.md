@@ -25,7 +25,7 @@ To check a build locally in Cloudflare’s runtime: `npm run build && npx wrangl
 
 `.github/workflows/refresh-data.yml` runs every Monday, daily in May and June, and on 1 July. See the README’s “Automatic updates” section for what each run does.
 
-The Education Authority site blocks GitHub-hosted runners, so run the job on a machine it accepts:
+The run has three jobs. The yearly rollover and the failure report run on GitHub-hosted runners and need no setup. The import job needs a machine the Education Authority site accepts, because that site blocks GitHub-hosted runners:
 
 1. On that machine, check access. It should print `200`:
    ```sh
@@ -39,7 +39,9 @@ The Education Authority site blocks GitHub-hosted runners, so run the job on a m
 3. Go to **Settings → Secrets and variables → Actions → Variables** and add `IMPORT_RUNNER` = `self-hosted`. Then go to **Actions → Refresh admissions data → Run workflow** to test it.
 4. Offline fallback: download the workbooks in a browser, then run `python3 scripts/import_data.py --from-dir <folder>`, `npm test` and `npm run build`, and commit `data/`.
 
-A failed run publishes nothing. It opens or updates the issue “Automatic data refresh failed”, which closes itself after the next successful run.
+A failed job publishes nothing. The report job opens or updates the issue “Automatic data refresh failed”, which closes itself after the next run in which both the rollover and the import succeed. Until the import machine is set up, the import fails on every run and the issue stays open; the yearly rollover still publishes.
+
+If the import machine is switched off when a run is due, the import job waits for it. GitHub’s usage limits cancel a job that has waited about 24 hours for a self-hosted runner, and the report job then records that on the issue.
 
 ## 3. Release checklist
 

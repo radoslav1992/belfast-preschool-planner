@@ -56,18 +56,19 @@ Text that depends on the application round lives in `src/site/content.mjs` and i
 
 ## Automatic updates
 
-`.github/workflows/refresh-data.yml` keeps the site current with no manual steps. It runs every Monday, daily through May and June (when the end-of-Stage-2 workbooks appear) and on 1 July. Each run:
+`.github/workflows/refresh-data.yml` keeps the site current with no manual steps. It runs every Monday, daily through May and June (when the end-of-Stage-2 workbooks appear) and on 1 July. Each run has three independent jobs:
 
-1. moves `data/season.json` on to the next September intake each July (`node scripts/season.mjs`);
-2. runs the importer, which finds and downloads any new Education Authority workbooks and profile links;
-3. runs the Python and Node tests and builds the site;
-4. commits `data/` to the default branch only when something changed and every check passed. Cloudflare Workers Builds, connected to the repository, deploys each push.
+1. **Yearly rollover.** Moves `data/season.json` on to the next September intake each July (`node scripts/season.mjs`). It needs nothing outside the repository, so it always runs on a GitHub-hosted runner.
+2. **Import data.** Runs the importer, which finds and downloads any new Education Authority workbooks and profile links. It needs a machine the Education Authority site accepts (see below).
+3. **Report result.** Opens the issue “Automatic data refresh failed” if either job did not succeed, comments on it for repeat failures and closes it after the next fully successful run. It runs on a GitHub-hosted runner, so it still reports when the import machine is offline.
 
-If any step fails, nothing is published and the site keeps its last good data. The workflow opens an issue titled “Automatic data refresh failed”, comments on it for repeat failures and closes it after the next successful run. The importer stops deliberately when a workbook changes layout or name, a publication is missing or a previously matched profile link disappears, because publishing unchecked figures would be worse than keeping last year’s.
+The rollover and the import each run the tests and build the site, and commit to the default branch only when their data changed and every check passed. Cloudflare Workers Builds, connected to the repository, deploys each push. The two are separate so that a blocked or failed import never holds back the yearly rollover.
+
+If a job fails, it publishes nothing and the site keeps its last good data for that part. The importer stops deliberately when a workbook changes layout or name, a publication is missing or a previously matched profile link disappears, because publishing unchecked figures would be worse than keeping last year’s.
 
 Key dates come from `data/key-dates.json` when confirmed dates are listed for the intake. Otherwise the site shows the usual pattern marked “expected” (criteria in December, Stage 1 in January) and links to the official timetable, so it never shows the previous year’s dates. Adding the official dates there is optional.
 
-The Education Authority site is behind Cloudflare bot protection. If it blocks GitHub’s hosted runners, the run fails and opens an issue. Set the repository variable `IMPORT_RUNNER` (for example to `self-hosted`) to run the same job on your own machine, as Shansometar does.
+The Education Authority site is behind Cloudflare bot protection and blocks GitHub’s hosted runners, so the import job fails there and the issue is opened. Set the repository variable `IMPORT_RUNNER` (for example to `self-hosted`) to run the import job on your own machine, as Shansometar does. Only the import job moves; the rollover and the report stay on GitHub’s runners.
 
 Tests that check exact values use the frozen fixture in `tests/fixtures/`. Tests on `data/` check invariants only, such as unique IDs, totals that reconcile and a plausible setting count, so a new intake does not break them.
 

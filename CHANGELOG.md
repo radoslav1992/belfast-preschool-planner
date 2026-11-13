@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The yearly rollover no longer depends on the data import. They were steps of one job, so while the Education Authority site blocked the import, the July rollover could not publish either. The refresh workflow now has three jobs: the rollover and the failure report run on GitHub-hosted runners, and only the import runs on the machine named by `IMPORT_RUNNER`.
+- The failure issue is now opened when the import job never starts, for example because a self-hosted runner is offline. Before, the reporting step was inside the import job, so it could not run in that case. The issue also says which part failed.
+
 ## 1.0.0 (2026-11-06)
 
 First public release: a multi-page site for families planning a funded preschool place in Belfast.
