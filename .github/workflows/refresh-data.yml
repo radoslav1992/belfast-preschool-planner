@@ -1,13 +1,19 @@
 name: Refresh admissions data
 
-# Runs with no human in the loop. Each run:
-#  1. moves the site on to the next application round each July (data/season.json),
-#  2. imports any new Education Authority workbooks and profile links,
-#  3. tests and builds the site,
-#  4. commits to main only if data changed and every check passed.
+# Runs with no human in the loop, in three independent jobs:
+#
+#  season   moves the site on to the next application round each July
+#           (data/season.json). Needs nothing outside this repository, so it
+#           always runs on a GitHub-hosted runner.
+#  refresh  imports any new Education Authority workbooks and profile links.
+#           Needs a machine the Education Authority site accepts.
+#  report   opens, updates or closes the failure issue. Runs on a GitHub-hosted
+#           runner even when the import machine is offline.
+#
+# Each of season and refresh tests and builds the site, and commits to the
+# default branch only if its data changed and every check passed. A failed
+# import therefore never holds back the yearly rollover.
 # Cloudflare Workers Builds (connected to this repository) deploys each push.
-# If anything fails, the last good data stays live and an issue is opened;
-# the issue closes itself after the next successful run.
 
 on:
   schedule:
@@ -16,26 +22,69 @@ on:
     - cron: '23 6 1 7 *'      # 1 July, so the season rolls over on time
   workflow_dispatch: {}
 
-permissions:
-  contents: write
-  issues: write
-  actions: write
-
-concurrency:
-  group: refresh-data
-  cancel-in-progress: false
+permissions: {}
 
 jobs:
+  season:
+    name: Yearly rollover
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: refresh-data-season
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+
+      - name: Move to the current application round
+        run: node scripts/season.mjs
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish the rollover
+        run: |
+          git add data/season.json
+          if git diff --cached --quiet; then
+            echo "Season unchanged. Nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git diff --cached >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Move to the September $(node -p "require('./data/season.json').intake") application round"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
   refresh:
+    name: Import data
+    # Runs after the rollover so the two never push at once, and whatever its result.
+    needs: season
+    if: ${{ !cancelled() }}
     # Set the repository variable IMPORT_RUNNER (e.g. "self-hosted") to run elsewhere
     # if the Education Authority site blocks GitHub's hosted runners.
     runs-on: ${{ vars.IMPORT_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 30
-    env:
-      GH_TOKEN: ${{ github.token }}
-      ISSUE_TITLE: Automatic data refresh failed
+    permissions:
+      contents: write
+    concurrency:
+      group: refresh-data-import
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
+        with:
+          # The branch tip, so a rollover committed a moment ago is included.
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-node@v5
         with:
@@ -47,9 +96,6 @@ jobs:
 
       - name: Install importer dependencies
         run: python -m pip install -r scripts/requirements.txt
-
-      - name: Move to the current application round
-        run: node scripts/season.mjs
 
       - name: Import Education Authority data
         run: python scripts/import_data.py
@@ -76,26 +122,47 @@ jobs:
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
+  report:
+    name: Report result
+    needs: [season, refresh]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      ISSUE_TITLE: Automatic data refresh failed
+      SEASON_RESULT: ${{ needs.season.result }}
+      REFRESH_RESULT: ${{ needs.refresh.result }}
+    steps:
       - name: Close the failure issue after a successful run
-        if: success()
+        if: needs.season.result == 'success' && needs.refresh.result == 'success'
         run: |
           for n in $(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number --jq '.[].number'); do
             gh issue close "$n" --comment "Fixed: the refresh succeeded in $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           done
 
       - name: Open or update the failure issue
-        if: failure()
+        # Anything other than success counts, including an import job that was
+        # cancelled because no runner picked it up.
+        if: needs.season.result != 'success' || needs.refresh.result != 'success'
         run: |
           run="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          results="Yearly rollover: $SEASON_RESULT. Data import: $REFRESH_RESULT."
           n=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number --jq '.[0].number // empty')
           if [ -n "$n" ]; then
-            gh issue comment "$n" --body "Failed again: $run"
+            gh issue comment "$n" --body "Failed again. $results $run"
           else
-            gh issue create --title "$ISSUE_TITLE" --body "The scheduled refresh stopped before publishing, so the site still shows the last good data.
+            gh issue create --title "$ISSUE_TITLE" --body "The scheduled refresh did not finish, so the site still shows the last good data for the part that failed.
+
+          $results
 
           Run log: $run
 
-          Common causes: the Education Authority changed a workbook's layout or file name, a profile link disappeared, or the site blocked the request. The importer stops on purpose in these cases rather than publish figures it cannot check."
+          Common causes for the import: the Education Authority site blocked the request, the import machine was offline, the Education Authority changed a workbook's layout or file name, or a profile link disappeared. The importer stops on purpose in these cases rather than publish figures it cannot check."
           fi
 
       - name: Keep the schedule active
